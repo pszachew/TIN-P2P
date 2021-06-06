@@ -16,9 +16,13 @@
 
 
 class Transfer {
+private:
+    int sock;
+    struct sockaddr_in address;
+
 public:
-    Transfer();
-    void transfer();
+    Transfer(std::string filename, int port, bool sending, std::string ip);
+    void send();
     void receive();
 };
 

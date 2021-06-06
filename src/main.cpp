@@ -40,8 +40,12 @@ int main(int argc, char *argv[]){
     }
     Broadcast socket(argv[1], atol(argv[2]));
 
+
     CUI console;
     std::thread broadcasting(broadcastList, socket);
+
+    Transfer transfer("test.txt", 2000, true, "127.0.0.1");
+    transfer.receive();
 
     std::set <std::string> available_resources;
     std::set <std::string> deleted_resources;
@@ -51,12 +55,12 @@ int main(int argc, char *argv[]){
         message = socket.receive();
         if(message.type == RESOURCE_LIST )
         {
-          available_resources.insert(message.name);
+            available_resources.insert(message.name);
         }
         else if (message.type == DELETE_RESOURCE)
         {
-          available_resources.erase(message.name);
-          deleted_resources.insert(message.name);
+            available_resources.erase(message.name);
+            deleted_resources.insert(message.name);
         }
         else if (message.type == DOWNLOAD_REQUEST)
         {

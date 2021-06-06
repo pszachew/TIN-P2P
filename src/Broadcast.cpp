@@ -40,7 +40,9 @@ void Broadcast::broadcast(struct ResourceDetails message){
 struct ResourceDetails Broadcast::receive(){
     int size;
     char buffer[MAX_SIZE];
-    if ((size = recvfrom(sock, buffer, MAX_SIZE, 0, NULL, 0)) < 0)
+    struct sockaddr_in received;
+    socklen_t len = sizeof(received);
+    if ((size = recvfrom(sock, buffer, MAX_SIZE, 0, (struct sockaddr *) &received, &len)) < 0)
         perror("recvfrom() failed");
     int type = bytesToInt(buffer);
     std::string name;
@@ -55,6 +57,7 @@ struct ResourceDetails Broadcast::receive(){
     }
     else perror("Wrong type of package");
 
+    std::string ipReceived = inet_ntoa(received.sin_addr);
 
     return packet;
 }
