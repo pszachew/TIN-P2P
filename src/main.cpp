@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <vector>
+#include <set>
 #include <pthread.h>
 
 #include "Broadcast.h"
@@ -15,7 +16,8 @@ std::vector<std::string> createList(){
     return list;
 }
 
-void* broadcastList(void *args){
+void* broadcastList(void *args)
+{
     Broadcast socket = *((Broadcast *)args);
     while(true){
     std::vector<std::string> resourcesList = createList();
@@ -39,13 +41,34 @@ int main(int argc, char *argv[]){
     }
     Broadcast socket(argv[1], atol(argv[2]));
 
+    std::set <std::string> available_resources;
+    std::set <std::string> deleted_resources;
+
     pthread_t broadcast_id;
     struct  ResourceDetails message;
     pthread_create(&broadcast_id, NULL, broadcastList, &socket);
     while(true){
         message = socket.receive();
-        std::cout<<"Received: " << message.name <<std::endl;
+        if(message.type == RESOURCE_LIST )
+        {
+          available_resources.insert(message.name);
+        }
+        else if (message.type == DELETE_RESOURCE)
+        {
+          available_resources.erase(message.name);
+          deleted_resources.insert(message.name);
+        }
+        else if (message.type == DOWNLOAD_REQUEST)
+        {
+          
+        }
+        else perror("Wrong msg type");
+        //std::cout<<"Received: " << message.name <<std::endl;
 
+        for(std::set<std::string>::iterator iter = available_resources.begin(); iter != available_resources.end(); ++iter )
+        std::cout << * iter << ' '<<std::endl;
+
+        std::cout<<std::endl;
         sleep(1);
     }
 }
