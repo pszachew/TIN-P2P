@@ -11,16 +11,12 @@
 #define SEND_FILE 0
 #define END_OF_FILE 1
 
-struct DatagramHeader {
-    uint32_t type;
-};
 struct DeleteDatagramHeader {
-    struct DatagramHeader header;
-    char resourceId[16];
+    uint32_t type;
+    char name[48];
 };
 struct ResourceDetails {
-    struct DatagramHeader header;
-    // char resourceId[16];
+    uint32_t type;
     uint32_t size;
     char name[48];
 };

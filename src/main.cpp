@@ -10,7 +10,6 @@ std::vector<std::string> createList(){
     path = path + "/resources";
     std::vector<std::string> list;
     for (const auto & entry : std::filesystem::directory_iterator(path)){
-        std::cout << entry.path().filename() << std::endl;
         list.push_back(entry.path().filename());
     }
     return list;
@@ -23,11 +22,12 @@ void* broadcastList(void *args){
 
         for(auto const& value: resourcesList) {
             struct ResourceDetails resourcePacket;
-            resourcePacket.header.type = htonl(RESOURCE_LIST);
+            resourcePacket.type = htonl(RESOURCE_LIST);
             resourcePacket.size = htonl(value.size());
             strcpy(resourcePacket.name, value.c_str());
             socket.broadcast(resourcePacket);
         }
+        sleep(1);
     }
 }
 
@@ -41,12 +41,11 @@ int main(int argc, char *argv[]){
 
     pthread_t broadcast_id;
 
-
     pthread_create(&broadcast_id, NULL, broadcastList, &socket);
     while(true){
         std::string message = socket.receive();
         std::cout<<"Received: " << message <<std::endl;
 
-        usleep(10000); // sleep for 10 ms
+        sleep(1);
     }
 }
