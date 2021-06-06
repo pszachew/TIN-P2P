@@ -1,9 +1,10 @@
 #include <filesystem>
 #include <vector>
-#include <pthread.h>
+#include <thread>
 
 #include "Broadcast.h"
 #include "Transfer.h"
+#include "CUI.h"
 
 std::vector<std::string> createList(){
     std::string path = std::filesystem::current_path();
@@ -15,8 +16,7 @@ std::vector<std::string> createList(){
     return list;
 }
 
-void* broadcastList(void *args){
-    Broadcast socket = *((Broadcast *)args);
+void broadcastList(Broadcast socket){
     while(true){
     std::vector<std::string> resourcesList = createList();
 
@@ -37,14 +37,16 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Usage: %s <ip> <port>\n", argv[0]);
         exit(1);
     }
-    Broadcast socket(argv[1], atol(argv[2]));
+    Broadcast socket(argv[1], atol(argv[2])); 
 
-    pthread_t broadcast_id;
+    CUI console;
+    std::thread broadcasting(broadcastList, socket);
+
     struct  ResourceDetails message;
-    pthread_create(&broadcast_id, NULL, broadcastList, &socket);
     while(true){
         message = socket.receive();
         std::cout<<"Received: " << message.name <<std::endl;
+        // std::cout<<"Received: " << message.name <<std::endl;
 
         sleep(1);
     }
