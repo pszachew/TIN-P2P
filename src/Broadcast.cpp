@@ -47,11 +47,11 @@ struct ResourceDetails Broadcast::receive(){
     struct ResourceDetails packet;
     if(type == RESOURCE_LIST || type==DOWNLOAD_REQUEST || type==DELETE_RESOURCE)
     {
-      packet.type = type;
-      packet.size = bytesToInt(buffer + 4);
-      strcpy(packet.name, buffer+8);
-      name = buffer + 8;
-      name = name + '\0';
+    packet.type = type;
+    packet.size = bytesToInt(buffer + 4);
+    strcpy(packet.name, buffer+8);
+    name = buffer + 8;
+    name = name + '\0';
     }
     else perror("Wrong type of package");
 
