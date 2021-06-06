@@ -7,7 +7,7 @@
 
 std::vector<std::string> createList(){
     std::string path = std::filesystem::current_path();
-    path = path + "/bin/resources";
+    path = path + "/resources";
     std::vector<std::string> list;
     for (const auto & entry : std::filesystem::directory_iterator(path)){
         std::cout << entry.path().filename() << std::endl;

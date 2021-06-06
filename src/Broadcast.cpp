@@ -36,41 +36,12 @@ std::string Broadcast::receive(){
     char buffer[MAX_SIZE];
     if ((size = recvfrom(sock, buffer, MAX_SIZE, 0, NULL, 0)) < 0)
         perror("recvfrom() failed");
-    std::cout << "s" << std::endl;
-    int type = ntohl(int((unsigned char)(buffer[0]) << 24 |
+    int type = int((unsigned char)(buffer[0]) << 24 |
                 (unsigned char)(buffer[1]) << 16 |
                 (unsigned char)(buffer[2]) << 8 |
-                (unsigned char)(buffer[3])));
+                (unsigned char)(buffer[3]));
     std::cout << type <<std::endl;
     std::string name = "received";
 
     return name;
-
 }
-
-// std::string Broadcast::findBroadcastIp(char const *name){
-//     struct ifaddrs *ifap, *ifa;
-//     struct sockaddr_in *sa, *sn;
-//     std::string addr;
-//     std::string netmask;
-
-//     struct in_addr broadcast_addr;
-//     std::string broadcast;
-
-//     getifaddrs (&ifap);
-//     for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-//         if (ifa->ifa_addr && ifa->ifa_addr->sa_family==AF_INET) {
-//             if(strcmp(ifa->ifa_name, name) == 0){
-//                 sa = (struct sockaddr_in *) ifa->ifa_addr;
-//                 addr = inet_ntoa(sa->sin_addr);
-//                 sn = (struct sockaddr_in *) ifa->ifa_netmask;
-//                 netmask = inet_ntoa(sn->sin_addr);
-//                 broadcast_addr.s_addr = sa->sin_addr.s_addr | ~(sn->sin_addr.s_addr);
-//                 broadcast = inet_ntoa(broadcast_addr);
-//             }
-//         }
-//     }
-
-//     freeifaddrs(ifap);
-//     return broadcast;
-// }
