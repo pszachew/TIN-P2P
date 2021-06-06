@@ -45,7 +45,6 @@ int main(int argc, char *argv[]){
     struct  ResourceDetails message;
     while(true){
         message = socket.receive();
-        std::cout<<"Received: " << message.name <<std::endl;
         // std::cout<<"Received: " << message.name <<std::endl;
 
         sleep(1);
