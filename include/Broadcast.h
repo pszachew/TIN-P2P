@@ -15,6 +15,8 @@
 #include <ifaddrs.h>
 #include <pthread.h>
 
+#include "Structures.h"
+
 
 class Broadcast {
 private:
@@ -22,10 +24,10 @@ private:
     char *ip;
     unsigned short port;
     struct sockaddr_in address;
-    std::string findBroadcastIp(char const *name);
 public:
-    Broadcast(unsigned short port, char const *interface);
+    Broadcast(char const* broadcastIp, unsigned short port);
     void broadcast(char const *message, int msgSize, int id);
+    void broadcast(struct ResourceDetails message);
     std::string receive();
 };
 

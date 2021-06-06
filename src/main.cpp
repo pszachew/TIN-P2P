@@ -1,26 +1,48 @@
+#include <filesystem>
+#include <vector>
+
 #include "Broadcast.h"
 #include "Transfer.h"
-#include "CUI.h"
 
-#define BC_PORT 8080
+std::vector<std::string> createList(){
+    std::string path = std::filesystem::current_path();
+    path = path + "/bin/resources";
+    std::vector<std::string> list;
+    for (const auto & entry : std::filesystem::directory_iterator(path)){
+        std::cout << entry.path().filename() << std::endl;
+        list.push_back(entry.path().filename());
+    }
+    return list;
+}
+
+void broadcastList(Broadcast socket){
+    std::vector<std::string> resourcesList = createList();
+
+    for(auto const& value: resourcesList) {
+        struct ResourceDetails resourcePacket;
+        resourcePacket.header.type = htonl(RESOURCE_LIST);
+        resourcePacket.size = htonl(value.size());
+        strcpy(resourcePacket.name, value.c_str());
+        socket.broadcast(resourcePacket);
+    }
+
+
+}
+
 
 int main(int argc, char *argv[]){
-    if (argc != 2 && argc != 3){
-        fprintf(stderr,"Usage: %s <send/receive> <interface>\n", argv[0]);
+    if (argc < 3){
+        fprintf(stderr,"Usage: %s <ip> <port>\n", argv[0]);
         exit(1);
     }
-    std::string name;
-    if(argc == 3)
-        name = argv[2];
-    else
-        name = "eth0";
-    Broadcast socket(BC_PORT, name.c_str()); 
-    if(strcmp(argv[1], "send") == 0){
-        socket.broadcast("hello", strlen("hello"), 0);
-    }
-    else if(strcmp(argv[1], "receive") == 0){
-        std::string message = socket.receive();
-        std::cout<<"Received: " << message <<std::endl; 
-    }
+    Broadcast socket(argv[1], atol(argv[2])); 
 
+
+    while(true){
+        broadcastList(socket);
+        std::string message = socket.receive();
+        std::cout<<"Received: " << message <<std::endl;
+
+        usleep(10000); // sleep for 10 ms
+    }
 }
