@@ -24,7 +24,7 @@ private:
     struct sockaddr_in address;
     std::string findBroadcastIp(char const *name);
 public:
-    Broadcast(unsigned short port);
+    Broadcast(unsigned short port, char const *interface);
     void broadcast(char const *message, int msgSize, int id);
     std::string receive();
 };

@@ -5,11 +5,16 @@
 #define BC_PORT 8080
 
 int main(int argc, char *argv[]){
-    if (argc != 2){
-        fprintf(stderr,"Usage: %s <send/receive>\n", argv[0]);
+    if (argc != 2 && argc != 3){
+        fprintf(stderr,"Usage: %s <send/receive> <interface>\n", argv[0]);
         exit(1);
     }
-    Broadcast socket(BC_PORT); 
+    std::string name;
+    if(argc == 3)
+        name = argv[2];
+    else
+        name = "eth0";
+    Broadcast socket(BC_PORT, name.c_str()); 
     if(strcmp(argv[1], "send") == 0){
         socket.broadcast("hello", strlen("hello"), 0);
     }

@@ -2,7 +2,7 @@
 
 #define MAXRECVSTRING 255
 
-Broadcast::Broadcast(unsigned short port){
+Broadcast::Broadcast(unsigned short port, char const* interface){
     this->port = port;
     if ((this->sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         perror("socket() failed");
@@ -12,7 +12,7 @@ Broadcast::Broadcast(unsigned short port){
 
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(findBroadcastIp("eth0").c_str());
+    address.sin_addr.s_addr = inet_addr(findBroadcastIp(interface).c_str());
     address.sin_port = htons(port);
 
     if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0)
