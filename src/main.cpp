@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <vector>
+#include <pthread.h>
 
 #include "Broadcast.h"
 #include "Transfer.h"
@@ -15,18 +16,19 @@ std::vector<std::string> createList(){
     return list;
 }
 
-void broadcastList(Broadcast socket){
+void* broadcastList(void *args){
+    Broadcast socket = *((Broadcast *)args);
+    while(true){
     std::vector<std::string> resourcesList = createList();
 
-    for(auto const& value: resourcesList) {
-        struct ResourceDetails resourcePacket;
-        resourcePacket.header.type = htonl(RESOURCE_LIST);
-        resourcePacket.size = htonl(value.size());
-        strcpy(resourcePacket.name, value.c_str());
-        socket.broadcast(resourcePacket);
+        for(auto const& value: resourcesList) {
+            struct ResourceDetails resourcePacket;
+            resourcePacket.header.type = htonl(RESOURCE_LIST);
+            resourcePacket.size = htonl(value.size());
+            strcpy(resourcePacket.name, value.c_str());
+            socket.broadcast(resourcePacket);
+        }
     }
-
-
 }
 
 
@@ -37,9 +39,11 @@ int main(int argc, char *argv[]){
     }
     Broadcast socket(argv[1], atol(argv[2])); 
 
+    pthread_t broadcast_id;
 
+
+    pthread_create(&broadcast_id, NULL, broadcastList, &socket);
     while(true){
-        broadcastList(socket);
         std::string message = socket.receive();
         std::cout<<"Received: " << message <<std::endl;
 

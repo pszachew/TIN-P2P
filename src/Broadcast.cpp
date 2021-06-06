@@ -4,6 +4,7 @@
 
 Broadcast::Broadcast(char const* broadcastIp, unsigned short port){
     this->port = port;
+    this->ip = broadcastIp;
     if ((this->sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         perror("socket() failed");
     int broadcastPermission = 1;
@@ -41,7 +42,7 @@ std::string Broadcast::receive(){
                 (unsigned char)(buffer[2]) << 8 |
                 (unsigned char)(buffer[3])));
     std::cout << type <<std::endl;
-    std::string name = "s";
+    std::string name = "received";
 
     return name;
 

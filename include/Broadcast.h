@@ -13,7 +13,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <ifaddrs.h>
-#include <pthread.h>
 
 #include "Structures.h"
 
@@ -21,7 +20,7 @@
 class Broadcast {
 private:
     int sock;
-    char *ip;
+    const char *ip;
     unsigned short port;
     struct sockaddr_in address;
 public:
