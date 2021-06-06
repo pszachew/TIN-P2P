@@ -3,17 +3,25 @@
 
 #include <iostream>
 #include <cstring>
-#include <vector>
+#include <set>
 #include <algorithm>
 #include <thread>
 
+#include<ios>   // for <streamsize>  
+#include<limits> // for numeric_limits
+
+
 class CUI{
-    std::vector<std::string> resources;
+    std::set<std::string> resources;
     std::thread console;
+    bool running;
 
 public:
     CUI();
     void run();
+    bool isRunning();
+    void updateList(std::set<std::string> list);
+    void joinThread();
 
 };
 

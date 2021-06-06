@@ -17,8 +17,8 @@ std::vector<std::string> createList(){
     return list;
 }
 
-void broadcastList(Broadcast socket){
-    while(true){
+void broadcastList(Broadcast *socket, CUI *console){
+    while(console->isRunning()){
     std::vector<std::string> resourcesList = createList();
 
         for(auto const& value: resourcesList) {
@@ -26,8 +26,37 @@ void broadcastList(Broadcast socket){
             resourcePacket.type = htonl(RESOURCE_LIST);
             resourcePacket.size = htonl(value.size());
             strcpy(resourcePacket.name, value.c_str());
-            socket.broadcast(resourcePacket);
+            socket->broadcast(resourcePacket);
         }
+        sleep(1);
+    }
+}
+
+void broadcastReceive(Broadcast *socket, CUI *console, std::set <std::string> *available, std::set <std::string> *deleted){ 
+
+    struct  ResourceDetails message;   
+    while(console->isRunning()){
+        message = socket->receive();
+        if(message.type == RESOURCE_LIST )
+        {
+            available->insert(message.name);
+        }
+        else if (message.type == DELETE_RESOURCE)
+        {
+            available->erase(message.name);
+            deleted->insert(message.name);
+        }
+        else if (message.type == DOWNLOAD_REQUEST)
+        {
+
+        }
+        else perror("Wrong msg type");
+        // std::cout<<"Received: " << message.name <<std::endl;
+
+        // for(std::set<std::string>::iterator iter = available->begin(); iter != available->end(); ++iter )
+        //     std::cout << * iter << ' '<<std::endl;
+        // std::cout<<std::endl;
+        console->updateList(*available);
         sleep(1);
     }
 }
@@ -42,37 +71,15 @@ int main(int argc, char *argv[]){
 
 
     CUI console;
-    std::thread broadcasting(broadcastList, socket);
+    std::set <std::string> *available_resources = new std::set <std::string>();
+    std::set <std::string> *deleted_resources = new std::set <std::string>();
+    std::thread broadcasting(broadcastList, &socket, &console);
+    std::thread broadcastReceiving(broadcastReceive, &socket, &console, available_resources, deleted_resources);
 
-    Transfer transfer("test.txt", 2000, true, "127.0.0.1");
-    transfer.receive();
+    // Transfer transfer("test.txt", 2000, "25.105.145.10");
+    // transfer.receive();
 
-    std::set <std::string> available_resources;
-    std::set <std::string> deleted_resources;
-
-    struct  ResourceDetails message;
-    while(true){
-        message = socket.receive();
-        if(message.type == RESOURCE_LIST )
-        {
-            available_resources.insert(message.name);
-        }
-        else if (message.type == DELETE_RESOURCE)
-        {
-            available_resources.erase(message.name);
-            deleted_resources.insert(message.name);
-        }
-        else if (message.type == DOWNLOAD_REQUEST)
-        {
-
-        }
-        else perror("Wrong msg type");
-        //std::cout<<"Received: " << message.name <<std::endl;
-
-        for(std::set<std::string>::iterator iter = available_resources.begin(); iter != available_resources.end(); ++iter )
-        std::cout << * iter << ' '<<std::endl;
-
-        std::cout<<std::endl;
-        sleep(1);
-    }
+    console.joinThread();
+    broadcasting.join();
+    broadcastReceiving.join();
 }

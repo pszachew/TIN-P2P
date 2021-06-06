@@ -21,7 +21,7 @@ private:
     struct sockaddr_in address;
 
 public:
-    Transfer(std::string filename, int port, bool sending, std::string ip);
+    Transfer(std::string filename, int port, std::string ip);
     void send();
     void receive();
 };

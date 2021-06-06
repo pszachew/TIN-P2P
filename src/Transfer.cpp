@@ -1,15 +1,12 @@
 #include "Transfer.h"
 
 
-Transfer::Transfer(std::string filename, int port, bool sending, std::string ip="127.0.0.1"){
+Transfer::Transfer(std::string filename, int port, std::string ip="127.0.0.1"){
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
         perror("socket() failed");
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
     address.sin_addr.s_addr = inet_addr(ip.c_str());
-
-    int e = connect(sock, (struct sockaddr*)&address, sizeof(address));
-
 }
 
 void Transfer::send(){
@@ -25,6 +22,7 @@ void Transfer::receive(){
 
     if(listen(sock, 1) < 0)
         perror("Error while listening");
+
     struct sockaddr_in clientAddress;
     socklen_t len = sizeof(clientAddress);
     int receivedSock = accept(sock, (struct sockaddr*) &clientAddress, &len);
