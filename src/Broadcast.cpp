@@ -37,20 +37,24 @@ void Broadcast::broadcast(struct ResourceDetails message){
         perror("sendto() sent a different number of bytes than expected");
 }
 
-std::string Broadcast::receive(){
+struct ResourceDetails Broadcast::receive(){
     int size;
     char buffer[MAX_SIZE];
     if ((size = recvfrom(sock, buffer, MAX_SIZE, 0, NULL, 0)) < 0)
         perror("recvfrom() failed");
     int type = bytesToInt(buffer);
     std::string name;
-    if(type == 0){
-        struct ResourceDetails packet;
-        packet.type = type;
-        packet.size = bytesToInt(buffer + 4);
-        name = buffer + 8;
-        name = name + '\0';
+    struct ResourceDetails packet;
+    if(type == RESOURCE_LIST || type==DOWNLOAD_REQUEST || type==DELETE_RESOURCE)
+    {
+      packet.type = type;
+      packet.size = bytesToInt(buffer + 4);
+      strcpy(packet.name, buffer+8);
+      name = buffer + 8;
+      name = name + '\0';
     }
+    else perror("Wrong type of package");
 
-    return name;
+
+    return packet;
 }

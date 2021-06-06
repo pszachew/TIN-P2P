@@ -27,7 +27,7 @@ public:
     Broadcast(char const* broadcastIp, unsigned short port);
     void broadcast(char const *message, int msgSize, int id);
     void broadcast(struct ResourceDetails message);
-    std::string receive();
+    struct ResourceDetails receive();
 };
 
 #endif

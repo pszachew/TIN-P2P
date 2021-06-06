@@ -6,6 +6,7 @@
 // UDP packets types
 #define RESOURCE_LIST 0
 #define DELETE_RESOURCE 1
+#define DOWNLOAD_REQUEST 2
 
 // TCP commands
 #define SEND_FILE 0

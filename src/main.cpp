@@ -37,14 +37,14 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"Usage: %s <ip> <port>\n", argv[0]);
         exit(1);
     }
-    Broadcast socket(argv[1], atol(argv[2])); 
+    Broadcast socket(argv[1], atol(argv[2]));
 
     pthread_t broadcast_id;
-
+    struct  ResourceDetails message;
     pthread_create(&broadcast_id, NULL, broadcastList, &socket);
     while(true){
-        std::string message = socket.receive();
-        std::cout<<"Received: " << message <<std::endl;
+        message = socket.receive();
+        std::cout<<"Received: " << message.name <<std::endl;
 
         sleep(1);
     }
