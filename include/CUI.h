@@ -6,13 +6,19 @@
 #include <set>
 #include <algorithm>
 #include <thread>
-
-#include<ios>   // for <streamsize>  
+#include <filesystem>
+#include <vector>
+#include<ios>   // for <streamsize>
 #include<limits> // for numeric_limits
 
 
 class CUI{
     std::set<std::string> resources;
+
+    std::vector<std::string> local_resources;
+    std::set<std::string> remote_resources;
+
+
     std::thread console;
     bool running;
 
@@ -25,4 +31,4 @@ public:
 
 };
 
-#endif  
+#endif

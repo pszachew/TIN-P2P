@@ -12,11 +12,12 @@ CUI::CUI(){
 void CUI::run(){
     int option = 0;
     running = true;
-    while(option != 2){
+    while(option != 3){
         std::cout << "\x1B[2J\x1B[H";
         std::cout << "Choose:" << std::endl;
-        std::cout << "1. Show resources list" << std::endl;
-        std::cout << "2. Exit" << std::endl;
+        std::cout << "1. Show remote resources list" << std::endl;
+        std::cout << "2. Show local resources list" << std::endl;
+        std::cout << "3. Exit" << std::endl;
         std::string buffer;
         std::cin >> buffer;
         if(!isNumber(buffer)){
@@ -35,8 +36,18 @@ void CUI::run(){
             std::cout << "press any key to continue" << std::endl;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
             getchar();
-        }else if(option == 2){
-            option = 2;
+        }
+        else if(option == 2)
+        {
+          std::cout << "\x1B[2J\x1B[H";
+          for (auto i = local_resources.begin(); i != local_resources.end(); ++i)
+            std::cout << *i << std::endl;
+          std::cout << "press any key to continue" << std::endl;
+          std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+          getchar();
+        }
+        else if(option == 3){
+            option = 3;
         }else{
             std::cout << "\x1B[2J\x1B[H";
             std::cout << "Wrong option!" << std::endl;
@@ -50,6 +61,13 @@ void CUI::run(){
 
 void CUI::updateList(std::set<std::string> list){
     resources = list;
+
+    std::string path = std::filesystem::current_path();
+    path = path + "/resources";
+    for (const auto & entry : std::filesystem::directory_iterator(path)){
+        local_resources.push_back(entry.path().filename());
+    }
+    remote_resources = list;
 }
 
 bool CUI::isRunning(){
