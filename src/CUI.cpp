@@ -65,7 +65,7 @@ void CUI::updateList(std::set<std::string> list){
     std::string path = std::filesystem::current_path();
     path = path + "/resources";
     for (const auto & entry : std::filesystem::directory_iterator(path)){
-        local_resources.push_back(entry.path().filename());
+        local_resources.insert(entry.path().filename());
     }
     remote_resources = list;
 }

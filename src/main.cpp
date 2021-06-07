@@ -7,19 +7,19 @@
 #include "Transfer.h"
 #include "CUI.h"
 
-std::vector<std::string> createList(){
+std::set<std::string> createList(){
     std::string path = std::filesystem::current_path();
     path = path + "/resources";
-    std::vector<std::string> list;
+    std::set<std::string> list;
     for (const auto & entry : std::filesystem::directory_iterator(path)){
-        list.push_back(entry.path().filename());
+        list.insert(entry.path().filename());
     }
     return list;
 }
 
 void broadcastList(Broadcast *socket, CUI *console){
     while(console->isRunning()){
-    std::vector<std::string> resourcesList = createList();
+    std::set<std::string> resourcesList = createList();
 
         for(auto const& value: resourcesList) {
             struct ResourceDetails resourcePacket;
@@ -32,9 +32,9 @@ void broadcastList(Broadcast *socket, CUI *console){
     }
 }
 
-void broadcastReceive(Broadcast *socket, CUI *console, std::set <std::string> *available, std::set <std::string> *deleted){ 
+void broadcastReceive(Broadcast *socket, CUI *console, std::set <std::string> *available, std::set <std::string> *deleted){
 
-    struct  ResourceDetails message;   
+    struct  ResourceDetails message;
     while(console->isRunning()){
         message = socket->receive();
         if(message.type == RESOURCE_LIST )

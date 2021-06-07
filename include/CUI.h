@@ -15,7 +15,7 @@
 class CUI{
     std::set<std::string> resources;
 
-    std::vector<std::string> local_resources;
+    std::set<std::string> local_resources;
     std::set<std::string> remote_resources;
 
 
