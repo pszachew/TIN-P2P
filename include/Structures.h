@@ -12,6 +12,8 @@
 #define SEND_FILE 0
 #define END_OF_FILE 1
 
+#define CHUNK_SIZE 1024
+
 struct DeleteDatagramHeader {
     uint32_t type;
     char name[48];
@@ -27,8 +29,9 @@ struct packetHeader{
 };
 struct ResourcePacketHeader {
     uint8_t command;
-    uint32_t offset;
+    // uint32_t offset;
     uint64_t size;
+    char data[CHUNK_SIZE];
 };
 
 #endif

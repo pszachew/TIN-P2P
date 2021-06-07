@@ -10,9 +10,9 @@ int bytesToInt(char buffer[4]){
     return number;
 }
 
-Broadcast::Broadcast(char const* broadcastIp, unsigned short port){
+Broadcast::Broadcast(const char *name, unsigned short port){
     this->port = port;
-    this->ip = broadcastIp;
+    setIps(name);
     if ((this->sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
         perror("socket() failed");
     int broadcastPermission = 1;
@@ -21,7 +21,7 @@ Broadcast::Broadcast(char const* broadcastIp, unsigned short port){
 
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(broadcastIp);
+    address.sin_addr.s_addr = inet_addr(broadcastIp.c_str());
     address.sin_port = htons(port);
 
     if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0)
@@ -60,4 +60,32 @@ struct ResourceDetails Broadcast::receive(){
     std::string ipReceived = inet_ntoa(received.sin_addr);
 
     return packet;
+}
+
+void Broadcast::setIps(const char *name){
+    struct ifaddrs *ifap, *ifa;
+    struct sockaddr_in *sa, *sn;
+    struct in_addr sb;
+    getifaddrs (&ifap);
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family==AF_INET) {
+            if(strcmp(ifa->ifa_name,name) == 0){
+                sa = (struct sockaddr_in *) ifa->ifa_addr;
+                ip = inet_ntoa(sa->sin_addr);
+                std::cout << ip <<std::endl;
+                unsigned long ip_addr = sa->sin_addr.s_addr;
+                sn = (struct sockaddr_in *) ifa->ifa_netmask;
+                std::string netmask(inet_ntoa(sn->sin_addr));
+                unsigned long netmask_addr = sn->sin_addr.s_addr;
+                sb.s_addr = ip_addr | ~netmask_addr;
+                broadcastIp = inet_ntoa(sb);
+            }
+        }
+    }
+
+    freeifaddrs(ifap);
+}
+
+std::string Broadcast::getIp(){
+    return ip;
 }

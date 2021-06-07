@@ -14,16 +14,18 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include "Structures.h"
 
 class Transfer {
 private:
     int sock;
     struct sockaddr_in address;
+    const char* filename;
+    void sendFile();
+    void receive();
 
 public:
-    Transfer(std::string filename, int port, std::string ip);
-    void send();
-    void receive();
+    Transfer(const char* filename, int port, std::string ip, bool sending);
 };
 
 #endif

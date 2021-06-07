@@ -20,14 +20,17 @@
 class Broadcast {
 private:
     int sock;
-    const char *ip;
     unsigned short port;
     struct sockaddr_in address;
+    std::string broadcastIp;
+    std::string ip;
 public:
-    Broadcast(char const* broadcastIp, unsigned short port);
+    Broadcast(const char *name, unsigned short port);
     void broadcast(char const *message, int msgSize, int id);
     void broadcast(struct ResourceDetails message);
     struct ResourceDetails receive();
+    void setIps(const char *name="eth0");
+    std::string getIp();
 };
 
 #endif

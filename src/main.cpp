@@ -19,7 +19,8 @@ std::set<std::string> createList(){
 
 void broadcastList(Broadcast *socket, CUI *console){
     while(console->isRunning()){
-    std::set<std::string> resourcesList = createList();
+        std::set<std::string> resourcesList = createList();
+        std::set<std::string> deletedList = console->getDeleted();
 
         for(auto const& value: resourcesList) {
             struct ResourceDetails resourcePacket;
@@ -28,56 +29,62 @@ void broadcastList(Broadcast *socket, CUI *console){
             strcpy(resourcePacket.name, value.c_str());
             socket->broadcast(resourcePacket);
         }
-        sleep(1);
+        for(auto const& value: deletedList) {
+            struct ResourceDetails resourcePacket;
+            resourcePacket.type = htonl(DELETE_RESOURCE);
+            resourcePacket.size = htonl(value.size());
+            strcpy(resourcePacket.name, value.c_str());
+            socket->broadcast(resourcePacket);
+        }
+        usleep(10000);
     }
 }
 
-void broadcastReceive(Broadcast *socket, CUI *console, std::set <std::string> *available, std::set <std::string> *deleted){
-
+void broadcastReceive(Broadcast *socket, CUI *console){
+    std::set <std::string> available = console->getAvailable();
+    std::set <std::string> deleted = console->getDeleted();
     struct  ResourceDetails message;
     while(console->isRunning()){
         message = socket->receive();
         if(message.type == RESOURCE_LIST )
         {
-            available->insert(message.name);
+            if(deleted.find(message.name) == deleted.end() || !deleted.size())
+                available.insert(message.name);
         }
         else if (message.type == DELETE_RESOURCE)
         {
-            available->erase(message.name);
-            deleted->insert(message.name);
+            available.erase(message.name);
+            deleted.insert(message.name);
+            std::string temp = "resources/";
+            temp = temp + message.name;
+            if(access( temp.c_str(), F_OK) == 0){
+                if(remove(temp.c_str()) != 0)
+                    perror("Error deleting file");
+            }
         }
         else if (message.type == DOWNLOAD_REQUEST)
         {
 
         }
         else perror("Wrong msg type");
-        // std::cout<<"Received: " << message.name <<std::endl;
-
-        // for(std::set<std::string>::iterator iter = available->begin(); iter != available->end(); ++iter )
-        //     std::cout << * iter << ' '<<std::endl;
-        // std::cout<<std::endl;
-        console->updateList(*available);
-        sleep(1);
+        console->updateList(available, deleted);
+        usleep(10000);
     }
 }
 
 
 int main(int argc, char *argv[]){
     if (argc < 3){
-        fprintf(stderr,"Usage: %s <ip> <port>\n", argv[0]);
+        fprintf(stderr,"Usage: %s <interface> <port>\n", argv[0]);
         exit(1);
     }
     Broadcast socket(argv[1], atol(argv[2]));
 
-
     CUI console;
-    std::set <std::string> *available_resources = new std::set <std::string>();
-    std::set <std::string> *deleted_resources = new std::set <std::string>();
     std::thread broadcasting(broadcastList, &socket, &console);
-    std::thread broadcastReceiving(broadcastReceive, &socket, &console, available_resources, deleted_resources);
+    std::thread broadcastReceiving(broadcastReceive, &socket, &console);
 
-    // Transfer transfer("test.txt", 2000, "25.105.145.10");
-    // transfer.receive();
+    // Transfer transfer("resources/test1.txt", 2000, "25.64.115.66", true);
 
     console.joinThread();
     broadcasting.join();

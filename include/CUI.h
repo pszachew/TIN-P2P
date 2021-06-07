@@ -13,10 +13,9 @@
 
 
 class CUI{
-    std::set<std::string> resources;
-
     std::set<std::string> local_resources;
     std::set<std::string> remote_resources;
+    std::set<std::string> deleted_resources;
 
 
     std::thread console;
@@ -26,8 +25,10 @@ public:
     CUI();
     void run();
     bool isRunning();
-    void updateList(std::set<std::string> list);
+    void updateList(std::set<std::string> avail, std::set<std::string> del);
     void joinThread();
+    std::set<std::string> getDeleted();
+    std::set<std::string> getAvailable();
 
 };
 
