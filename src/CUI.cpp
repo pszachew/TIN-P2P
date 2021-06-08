@@ -13,7 +13,7 @@ void CUI::run(){
     int option = 0;
     running = true;
     while(option != 6){
-        // std::cout << "\x1B[2J\x1B[H";
+        std::cout << "\x1B[2J\x1B[H";
         std::cout << "Choose:" << std::endl;
         std::cout << "1. Show available resources list" << std::endl;
         std::cout << "2. Show local resources list" << std::endl;
@@ -34,7 +34,7 @@ void CUI::run(){
         option = atoi(buffer.c_str());
         buffer.clear();
         if(option == 1){ //list
-            // std::cout << "\x1B[2J\x1B[H";
+            std::cout << "\x1B[2J\x1B[H";
             for(std::set<std::string>::iterator iter = resources.begin(); iter != resources.end(); ++iter)
                 std::cout << * iter << ' '<<std::endl;
             std::cout << "press any key to continue" << std::endl;
@@ -43,7 +43,7 @@ void CUI::run(){
         }
         else if(option == 2)
         {
-            // std::cout << "\x1B[2J\x1B[H";
+            std::cout << "\x1B[2J\x1B[H";
             for (auto i = local_resources.begin(); i != local_resources.end(); ++i)
                 std::cout << *i << std::endl;
             std::cout << "press any key to continue" << std::endl;
@@ -52,7 +52,7 @@ void CUI::run(){
         }
         else if(option == 3)
         {
-            // std::cout << "\x1B[2J\x1B[H";
+            std::cout << "\x1B[2J\x1B[H";
             for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i)
                 std::cout << *i << std::endl;
             std::cout << "press any key to continue" << std::endl;
@@ -62,7 +62,7 @@ void CUI::run(){
         else if(option == 4){
             int n = 1;
             int choose = 0;
-            // std::cout << "\x1B[2J\x1B[H";
+            std::cout << "\x1B[2J\x1B[H";
             std::cout << "Choose number to delete resource:" << std::endl;   
             for (auto i = local_resources.begin(); i != local_resources.end(); ++i){
                 std::cout << n <<". "<< *i << std::endl;   
@@ -98,7 +98,7 @@ void CUI::run(){
         else if(option == 5){
             int n = 1;
             int choose = 0;
-            // std::cout << "\x1B[2J\x1B[H";
+            std::cout << "\x1B[2J\x1B[H";
             std::cout << "Choose number to download resource:" << std::endl;   
             for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i){
                 if(std::find_if(requests.begin(), requests.end(), [&](const std::pair<std::string,int> &e){return e.first == *i;}) == requests.end() || !requests.size()){

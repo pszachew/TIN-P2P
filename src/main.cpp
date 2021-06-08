@@ -98,12 +98,15 @@ void broadcastReceive(Broadcast *socket, CUI *console){
         }
         else if (message.packet.type == DOWNLOAD_REQUEST)
         {
-            if(std::find(sending.begin(), sending.end(), message.packet.name) == sending.end()){
-                writeLog("bin/logs/sended_transfers.log", message);
-                std::ofstream *f = new std::ofstream("bin/logs/sended_transfers.log", std::ios::app);
-                sending.push_back(message.packet.name);
-                std::cout << message.packet.name << std::endl;
-                transfers.push_back(std::thread(transferFile, message.ip, message.packet.name, f, message.packet.port));
+            std::set<std::string> local = createList();
+            if(std::find(local.begin(), local.end(), message.packet.name) != local.end()){
+                if(std::find(sending.begin(), sending.end(), message.packet.name) == sending.end()){
+                    writeLog("bin/logs/sended_transfers.log", message);
+                    std::ofstream *f = new std::ofstream("bin/logs/sended_transfers.log", std::ios::app);
+                    sending.push_back(message.packet.name);
+                    std::cout << message.packet.name << std::endl;
+                    transfers.push_back(std::thread(transferFile, message.ip, message.packet.name, f, message.packet.port));
+                }
             }
         }
         else if(message.packet.type == SELF_SEND){

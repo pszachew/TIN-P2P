@@ -2,14 +2,6 @@
 
 #define MAX_SIZE 1024
 
-int bytesToInt(char buffer[4]){
-    int number = int((unsigned char)(buffer[0]) << 24 |
-            (unsigned char)(buffer[1]) << 16 |
-            (unsigned char)(buffer[2]) << 8 |
-            (unsigned char)(buffer[3]));
-    return number;
-}
-
 Broadcast::Broadcast(const char *name, unsigned short port){
     this->port = port;
     setIps(name);
@@ -27,6 +19,7 @@ Broadcast::Broadcast(const char *name, unsigned short port){
     if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0)
         perror("bind() failed");
 }
+
 Broadcast::~Broadcast(){
     close(sock);
 }

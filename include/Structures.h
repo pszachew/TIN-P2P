@@ -30,11 +30,4 @@ struct ReceivedPacket {
     ReceivedPacket(ResourceDetails p, std::string i) : packet(p), ip(i){}
 };
 
-struct ResourcePacket {
-    uint8_t command;
-    // uint32_t offset;
-    uint64_t size;
-    char data[CHUNK_SIZE];
-};
-
 #endif
