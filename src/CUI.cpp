@@ -112,12 +112,10 @@ void CUI::run(){
                 option = 0;
                 continue;
             }
-            std::cin >> choose;
             n = 1;
             for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i){
                 if(choose == n){
-                    std::thread downloadThread(&CUI::downloading, this, *i);
-                    downloads.push_back(move(downloadThread));
+                    downloads.push_back(std::thread(&CUI::downloading, this, *i));
                     std::cout << "press any key to continue" << std::endl;
                     std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
                     getchar();
@@ -143,11 +141,7 @@ void CUI::run(){
 }
 
 void CUI::updateList(){
-    std::string path = std::filesystem::current_path();
-    path = path + "/resources";
-    for (const auto & entry : std::filesystem::directory_iterator(path)){
-        local_resources.insert(entry.path().filename());
-    }
+    updateLocal();
     resources.insert(local_resources.begin(), local_resources.end());
     for(auto const& value: remote_resources) {
         resources.insert(value);
@@ -168,9 +162,11 @@ void CUI::updateLocal(){
 
 
 void CUI::downloading(std::string name){
+    std::cout << "Download...\n";
     std::ofstream *f = new std::ofstream("bin/logs/received_transfers.log", std::ios::app);
-    Transfer transfer(("resources/"+name).c_str(), f, ip, false);
+    Transfer transfer(("resources/"+name), f, ip, false);
     std::pair<std::string,int> p(name, transfer.getPort());
+    std::cout << "Waiting for transfer...\n";
     requests.insert(p);
     transfer.receive();
     requests.erase(p);

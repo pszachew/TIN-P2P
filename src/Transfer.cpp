@@ -1,6 +1,6 @@
 #include "Transfer.h"
 
-Transfer::Transfer(const char* filename, std::ofstream *logFile, std::string ip, bool sending, int port){
+Transfer::Transfer(std::string filename, std::ofstream *logFile, std::string ip, bool sending, int port){
     this->filename = filename;
     this->port = port;
     this->logFile = logFile;
@@ -10,26 +10,31 @@ Transfer::Transfer(const char* filename, std::ofstream *logFile, std::string ip,
     address.sin_port = htons(port); // choose first available port
     address.sin_addr.s_addr = inet_addr(ip.c_str());
 
-    if(sending){
-        if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0)
+    if(!sending){
+        if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0){
+            perror("bind() failed");
             *logFile << "bind() failed" << std::endl;
+            return;
+        }
         socklen_t len = sizeof(address);
         if (getsockname(sock, (struct sockaddr *)&address, &len) != -1)
-            port = ntohs(address.sin_port);
+            this->port = ntohs(address.sin_port);
     }
-    else
-        receive();
 }
 
 void Transfer::sendFile(){
     if(connect(sock, (struct sockaddr*)&address, sizeof(address)) < 0){
+        perror("Unable to connect");
         *logFile << "Unable to connect" << std::endl;
+        return;
     }
     *logFile << "Connected with server successfully"<< std::endl;
     FILE *fp;
-    fp = fopen(filename, "rb");
+    fp = fopen(filename.c_str(), "rb");
     if(fp == NULL){
+        perror("Error in reading file.");
         *logFile << "Error in reading file." << std::endl;
+        return;
     }
     fseek(fp, 0L, SEEK_END);
     int file_length = ftell(fp);
@@ -45,7 +50,9 @@ void Transfer::sendFile(){
             packet.command = END_OF_FILE;
         std::cout << "data: " << packet.data << std::endl;
         if(write(sock, (void*)&packet, sizeof(packet))== -1){
+            perror("Error in sending data");
             *logFile << "Error in sending data" << std::endl;
+            break;
         }
     }
     fclose(fp);
@@ -53,22 +60,29 @@ void Transfer::sendFile(){
     close(sock);
 }
 void Transfer::receive(){
-    if(listen(sock, 1) < 0)
+    if(listen(sock, 1) < 0){
+        perror("Error while listening");
         *logFile << "Error while listening" << std::endl;
-
+        return;
+    }
+    *logFile << "Listening..." << std::endl;
     struct sockaddr_in clientAddress;
     socklen_t len = sizeof(clientAddress);
     int receivedSock = accept(sock, (struct sockaddr*) &clientAddress, &len);
-    if (receivedSock < 0)
+    if (receivedSock < 0){
+        perror("Can't accept connection");
         *logFile << "Can't accept connection" << std::endl;
+        return;
+    }
     *logFile << "Connected at IP: " << inet_ntoa(clientAddress.sin_addr) << " and port: " << ntohs(clientAddress.sin_port) << std::endl;
 
     int n;
     FILE *fp;
-
-    fp = fopen(filename, "wb");
+    fp = fopen(filename.c_str(), "wb");
     if(fp==NULL){
+        perror("Error in creating file");
         *logFile << "Error in creating file" << std::endl;
+        return;
     }
     ResourcePacket packet;
     while(packet.command != END_OF_FILE){

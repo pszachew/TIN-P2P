@@ -22,11 +22,11 @@ private:
     int sock;
     int port;
     struct sockaddr_in address;
-    const char* filename;
+    std::string filename;
     std::ofstream *logFile;
 
 public:
-    Transfer(const char* filename, std::ofstream *logFile, std::string ip, bool sending, int port=0);
+    Transfer(std::string filename, std::ofstream *logFile, std::string ip, bool sending, int port=0);
     int getPort();
     void sendFile();
     void receive();

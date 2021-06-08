@@ -37,29 +37,36 @@ void Broadcast::broadcast(struct ResourceDetails message){
 
 ReceivedPacket Broadcast::receive(){
     int size;
-    char buffer[MAX_SIZE];
+    // char buffer[MAX_SIZE];
     struct sockaddr_in received;
     socklen_t len = sizeof(received);
-    if ((size = recvfrom(sock, buffer, MAX_SIZE, 0, (struct sockaddr *) &received, &len)) < 0)
+    ResourceDetails packet;
+    if ((size = recvfrom(sock, (ResourceDetails*)&packet, sizeof(packet), 0, (struct sockaddr *) &received, &len)) < 0)
         perror("recvfrom() failed");
     std::string ipReceived = inet_ntoa(received.sin_addr);
+    packet.type = ntohl(packet.type);
+    packet.port = ntohl(packet.port);
+    std::string temp = packet.name + '\0';
+    strcpy(packet.name, temp.c_str());
     if(ipReceived == ip){
-        ResourceDetails packet;
         packet.type = SELF_SEND;
         return ReceivedPacket(packet, ipReceived);
     }
-    int type = bytesToInt(buffer);
-    std::string name;
-    ResourceDetails packet;
-    if(type == RESOURCE_LIST  || type==DELETE_RESOURCE)
-    {
-        packet.type = type;
-        strcpy(packet.name, buffer+8);
-        name = buffer + 8;
-        name = name + '\0';
-    } else if(type==DOWNLOAD_REQUEST)
-        packet.port = bytesToInt(buffer+4);
-    else perror("Wrong type of package");
+    // int type = bytesToInt(buffer);
+    // std::string name;
+    // if(type == RESOURCE_LIST  || type==DELETE_RESOURCE)
+    // {
+    //     packet.type = type;
+    //     strcpy(packet.name, buffer+8);
+    //     name = buffer + 8;
+    //     name = name + '\0';
+    // } else if(type==DOWNLOAD_REQUEST){
+    //     packet.type = type;
+    //     packet.port = bytesToInt(buffer+4);
+    //     name = buffer + 8;
+    //     name = name + '\0';
+    // }
+    // else perror("Wrong type of package");
 
 
     return ReceivedPacket(packet, ipReceived);

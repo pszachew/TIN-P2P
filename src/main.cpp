@@ -55,7 +55,7 @@ void broadcastList(Broadcast *socket, CUI *console){
         for(auto const& value: resourcesList) {
             ResourceDetails resourcePacket;
             resourcePacket.type = htonl(RESOURCE_LIST);
-            resourcePacket.port = htonl(0);
+            resourcePacket.port = 0;
             strcpy(resourcePacket.name, value.c_str());
             socket->broadcast(resourcePacket);
             writeLog(logFile, resourcePacket);
@@ -63,7 +63,7 @@ void broadcastList(Broadcast *socket, CUI *console){
         for(auto const& value: deletedList) {
             ResourceDetails resourcePacket;
             resourcePacket.type = htonl(DELETE_RESOURCE);
-            resourcePacket.port = htonl(0);
+            resourcePacket.port = 0;
             strcpy(resourcePacket.name, value.c_str());
             socket->broadcast(resourcePacket);
             writeLog(logFile, resourcePacket);
@@ -102,8 +102,8 @@ void broadcastReceive(Broadcast *socket, CUI *console){
                 writeLog("bin/logs/sended_transfers.log", message);
                 std::ofstream *f = new std::ofstream("bin/logs/sended_transfers.log", std::ios::app);
                 sending.push_back(message.packet.name);
-                std::thread transferThread(transferFile, message.ip, message.packet.name, f, message.packet.port);
-                transfers.push_back(move(transferThread));
+                std::cout << message.packet.name << std::endl;
+                transfers.push_back(std::thread(transferFile, message.ip, message.packet.name, f, message.packet.port));
             }
         }
         else if(message.packet.type == SELF_SEND){
@@ -116,11 +116,14 @@ void broadcastReceive(Broadcast *socket, CUI *console){
 }
 
 void transferFile(std::string ip, std::string name, std::ofstream *logFile, int port){
-    Transfer transfer(name.c_str(), logFile, ip.c_str(), true, port);
+    Transfer transfer(("resources/" + name), logFile, ip, true, port);
+    std::cout<<"TRANSFERING.." <<std::endl;
     transfer.sendFile();
 }
 
 void writeLog(std::string filename, ResourceDetails packet){
+    packet.type = ntohl(packet.type);
+    packet.port = ntohl(packet.port);
     std::ofstream f(filename, std::ios::app);
     time_t now = time(0);
     tm *ltm = localtime(&now);
@@ -130,10 +133,12 @@ void writeLog(std::string filename, ResourceDetails packet){
     else if(packet.type == DELETE_RESOURCE)
         f << " DELETE_RESOURCE" ;
     else if(packet.type == DOWNLOAD_REQUEST){
-        f << " DOWNLOAD_REQUEST " << packet.port;
+        f << " DOWNLOAD_REQUEST " << packet.port << " ";
     }
     else if(packet.type == SELF_SEND)
         f << " SELF_SEND ";
+    else
+        f << " WRONG PACKET TYPE " << packet.type << " ";
     f << packet.name << std::endl;
     f.close();
 }
