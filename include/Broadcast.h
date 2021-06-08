@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <tuple>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,9 +27,10 @@ private:
     std::string ip;
 public:
     Broadcast(const char *name, unsigned short port);
+    ~Broadcast();
     void broadcast(char const *message, int msgSize, int id);
     void broadcast(struct ResourceDetails message);
-    struct ResourceDetails receive();
+    ReceivedPacket receive();
     void setIps(const char *name="eth0");
     std::string getIp();
 };

@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <fstream>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,13 +20,16 @@
 class Transfer {
 private:
     int sock;
+    int port;
     struct sockaddr_in address;
     const char* filename;
-    void sendFile();
-    void receive();
+    std::ofstream *logFile;
 
 public:
-    Transfer(const char* filename, int port, std::string ip, bool sending);
+    Transfer(const char* filename, std::ofstream *logFile, std::string ip, bool sending, int port=0);
+    int getPort();
+    void sendFile();
+    void receive();
 };
 
 #endif

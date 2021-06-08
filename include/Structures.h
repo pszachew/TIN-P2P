@@ -1,12 +1,15 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
+#include <string>
+#include <set>
 #include <stdint.h>
 
 // UDP packets types
 #define RESOURCE_LIST 0
 #define DELETE_RESOURCE 1
 #define DOWNLOAD_REQUEST 2
+#define SELF_SEND 3
 
 // TCP commands
 #define SEND_FILE 0
@@ -14,20 +17,20 @@
 
 #define CHUNK_SIZE 1024
 
-struct DeleteDatagramHeader {
-    uint32_t type;
-    char name[48];
-};
 struct ResourceDetails {
     uint32_t type;
-    uint32_t size;
+    uint32_t port;
     char name[48];
 };
 
-struct packetHeader{
-    uint8_t command;
+struct ReceivedPacket {
+    ResourceDetails packet;
+    std::string ip;
+    ReceivedPacket() {}
+    ReceivedPacket(ResourceDetails p, std::string i) : packet(p), ip(i){}
 };
-struct ResourcePacketHeader {
+
+struct ResourcePacket {
     uint8_t command;
     // uint32_t offset;
     uint64_t size;

@@ -27,39 +27,42 @@ Broadcast::Broadcast(const char *name, unsigned short port){
     if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0)
         perror("bind() failed");
 }
-
-void Broadcast::broadcast(char const *message, int msgSize,  int id){
-    if (sendto(sock, message, msgSize, 0, (struct sockaddr *) &address, sizeof(address)) != msgSize)
-        perror("sendto() sent a different number of bytes than expected");
+Broadcast::~Broadcast(){
+    close(sock);
 }
 void Broadcast::broadcast(struct ResourceDetails message){
-    if (sendto(sock, (void *)&message, sizeof(message), 0, (struct sockaddr *) &address, sizeof(address)) != sizeof(message))
-        perror("sendto() sent a different number of bytes than expected");
+	if (sendto(sock, (void *)&message, sizeof(message), 0, (struct sockaddr *) &address, sizeof(address)) != sizeof(message))
+	perror("sendto() sent a different number of bytes than expected");
 }
 
-struct ResourceDetails Broadcast::receive(){
+ReceivedPacket Broadcast::receive(){
     int size;
     char buffer[MAX_SIZE];
     struct sockaddr_in received;
     socklen_t len = sizeof(received);
     if ((size = recvfrom(sock, buffer, MAX_SIZE, 0, (struct sockaddr *) &received, &len)) < 0)
         perror("recvfrom() failed");
+    std::string ipReceived = inet_ntoa(received.sin_addr);
+    if(ipReceived == ip){
+        ResourceDetails packet;
+        packet.type = SELF_SEND;
+        return ReceivedPacket(packet, ipReceived);
+    }
     int type = bytesToInt(buffer);
     std::string name;
-    struct ResourceDetails packet;
-    if(type == RESOURCE_LIST || type==DOWNLOAD_REQUEST || type==DELETE_RESOURCE)
+    ResourceDetails packet;
+    if(type == RESOURCE_LIST  || type==DELETE_RESOURCE)
     {
-    packet.type = type;
-    packet.size = bytesToInt(buffer + 4);
-    strcpy(packet.name, buffer+8);
-    name = buffer + 8;
-    name = name + '\0';
-    }
+        packet.type = type;
+        strcpy(packet.name, buffer+8);
+        name = buffer + 8;
+        name = name + '\0';
+    } else if(type==DOWNLOAD_REQUEST)
+        packet.port = bytesToInt(buffer+4);
     else perror("Wrong type of package");
 
-    std::string ipReceived = inet_ntoa(received.sin_addr);
 
-    return packet;
+    return ReceivedPacket(packet, ipReceived);
 }
 
 void Broadcast::setIps(const char *name){
