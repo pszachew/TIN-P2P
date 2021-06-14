@@ -62,7 +62,13 @@ void Transfer::sendFile(){
     firstPacket = intToBytes(htonl(SEND_FILE), firstPacket);
     firstPacket = intToBytes(htonl(fileSize), firstPacket);
     firstPacket -= 8;
-    write(sock, firstPacket, 8); // wyslanie pierwszego pakietu
+    if(write(sock, firstPacket, 8) <= 0){ // wyslanie pierwszego pakietu
+        *logFile << "Error sending first packet: " << errno << std::endl;
+        free(firstPacket);
+        fclose(fp);
+        close(sock);
+        return;
+    } 
     free(firstPacket); // wyczyszczenie bufora
     char *buffer = (char*)malloc((CHUNK_SIZE) * sizeof(char)); // bufor na kawalki pliku
     int n = 0;
@@ -81,7 +87,7 @@ void Transfer::sendFile(){
             break;
         }
         n += sent_size; // dodanie liczby wyslanych bajtow do licznika
-        *logFile << "Sent chunk size: " << sent_size << std::endl;
+        // *logFile << "Sent chunk size: " << sent_size << std::endl;
     }
     free(buffer);
     fclose(fp);
@@ -145,7 +151,7 @@ void Transfer::receive(){
             break;
         }
         receivedSize += n;
-        *logFile << "Chunk size: " << n << std::endl;
+        // *logFile << "Chunk size: " << n << std::endl;
         if(fwrite(buffer, 1, n, fp) < 0){
             *logFile << "Error while writing file" << std::endl;
         }
