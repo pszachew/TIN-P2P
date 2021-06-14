@@ -41,11 +41,11 @@ Transfer::Transfer(std::string filename, std::ofstream *logFile, std::string ip,
 
 void Transfer::sendFile(){
     if(connect(sock, (struct sockaddr*)&address, sizeof(address)) < 0){ // proba nawiazania polaczenia
-        puts("Unable to connect");
         *logFile << "Unable to connect" << std::endl;
         return;
     }
     *logFile << "Connected with server successfully"<< std::endl;
+    std::cout<<"Transfering: " << filename.substr(filename.find("/")+1) << std::endl;
     FILE *fp;
     fp = fopen(filename.c_str(), "rb"); // otwarcie zasobu
     if(fp == NULL){
@@ -113,6 +113,7 @@ void Transfer::receive(){
         *logFile << "Can't accept connection" << std::endl;
         return;
     }
+    close(sock); // zamknij gniazdo aby nie umozliwiac kolejnych polaczen
     *logFile << "Connected at IP: " << inet_ntoa(clientAddress.sin_addr) << " and port: " << ntohs(clientAddress.sin_port) << std::endl;
     struct timeval tv;
     tv.tv_sec = 20;
@@ -144,7 +145,6 @@ void Transfer::receive(){
                 *logFile << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
                 free(buffer);
                 fclose(fp);
-                close(sock);
                 close(receivedSock);
                 return;
             }
@@ -162,7 +162,6 @@ void Transfer::receive(){
 
     *logFile << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
     std::cout << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
-    close(sock);
     close(receivedSock);
 }
 int Transfer::getPort(){
