@@ -21,6 +21,7 @@
 class Transfer {
 private:
     int sock; // deskryptor gniazda
+    int receivedSock;
     int port; // port polaczenia TCP
     struct sockaddr_in address; // adres gniazda
     std::string filename; // nazwa przesylanego pliku
@@ -28,6 +29,7 @@ private:
 
 public:
     Transfer(std::string filename, std::ofstream *logFile, std::string ip, bool sending, int port=0);
+    ~Transfer();
     int getPort();
     void sendFile(); // wysylanie pliku do klienta
     void receive(); // odbieranie pliku od klienta

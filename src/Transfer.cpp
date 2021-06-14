@@ -38,6 +38,11 @@ Transfer::Transfer(std::string filename, std::ofstream *logFile, std::string ip,
             this->port = ntohs(address.sin_port);
     }
 }
+Transfer::~Transfer(){
+    close(sock);
+    close(receivedSock);
+    logFile->close();
+}
 
 void Transfer::sendFile(){
     if(connect(sock, (struct sockaddr*)&address, sizeof(address)) < 0){ // proba nawiazania polaczenia
@@ -116,7 +121,7 @@ void Transfer::receive(){
     close(sock); // zamknij gniazdo aby nie umozliwiac kolejnych polaczen
     *logFile << "Connected at IP: " << inet_ntoa(clientAddress.sin_addr) << " and port: " << ntohs(clientAddress.sin_port) << std::endl;
     struct timeval tv;
-    tv.tv_sec = 20;
+    tv.tv_sec = 5;
     tv.tv_usec = 0;
     setsockopt(receivedSock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     int n;
@@ -130,6 +135,17 @@ void Transfer::receive(){
     // ResourcePacket packet;
     char *firstPacket = (char*)malloc(8 * sizeof(char)); // pierwszy pakiet z komenda i rozmiarem pliku
     n = read(receivedSock, firstPacket, 8); // odebranie pakietu
+    if( n < 0){
+        *logFile << "First packet: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+        if(errno == EAGAIN || errno == EWOULDBLOCK){
+            remove((filename + ".part").c_str());
+            *logFile << "Error reading packets: " << errno << std::endl;
+            std::cout << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+            *logFile << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+            fclose(fp);
+        }
+        return;
+    }
     // int command = ntohl(bytesToInt(firstPacket));
     int fileSize = ntohl(bytesToInt(firstPacket+4));
     free(firstPacket);
@@ -137,15 +153,14 @@ void Transfer::receive(){
     int receivedSize = 0;
     while(receivedSize != fileSize){ // odbieramy pakietu dopoki nie dotarlismy do konca pliku
         n = read(receivedSock, buffer, CHUNK_SIZE);
-        if( n < 0){
-            if(errno == EAGAIN || errno == EWOULDBLOCK){
+        if( n <= 0){
+            if(errno == EAGAIN || errno == EWOULDBLOCK || receivedSize != fileSize){
                 remove((filename + ".part").c_str());
                 *logFile << "Error reading packets: " << errno << std::endl;
                 std::cout << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
                 *logFile << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
                 free(buffer);
                 fclose(fp);
-                close(receivedSock);
                 return;
             }
             break;
@@ -162,7 +177,6 @@ void Transfer::receive(){
 
     *logFile << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
     std::cout << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
-    close(receivedSock);
 }
 int Transfer::getPort(){
     return port;
