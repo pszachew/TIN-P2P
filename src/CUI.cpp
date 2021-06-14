@@ -159,7 +159,9 @@ void CUI::updateLocal(){
     std::string path = std::filesystem::current_path();
     path = path + "/resources";
     for (const auto & entry : std::filesystem::directory_iterator(path)){
-        local_resources.insert(entry.path().filename());
+        std::string tempName = entry.path().filename();
+        if(tempName.substr(tempName.size()-5, 5) != ".part")
+            local_resources.insert(tempName);
     }
     resources.insert(local_resources.begin(), local_resources.end());
 }

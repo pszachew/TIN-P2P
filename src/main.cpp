@@ -4,7 +4,6 @@
 #include <thread>
 #include <fstream> 
 #include <ctime>
-#include <chrono>
 
 #include "Broadcast.h"
 #include "Transfer.h"
@@ -125,6 +124,7 @@ void transferFile(std::string ip, std::string name, std::ofstream *logFile, int 
     Transfer transfer(("resources/" + name), logFile, ip, true, port); // transfer pliku jako wysylajacy
     std::cout<<"Transfering: " << name << std::endl;
     transfer.sendFile(); // nawiazanie polaczenia i wyslanie pliku
+    sleep(1);
     sending->erase(std::remove(sending->begin(), sending->end(), std::make_pair(name, port)), sending->end());
 }
 

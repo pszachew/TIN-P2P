@@ -114,7 +114,7 @@ void Transfer::receive(){
     setsockopt(receivedSock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     int n;
     FILE *fp;
-    fp = fopen(filename.c_str(), "wb");
+    fp = fopen((filename + ".part").c_str(), "wb");
     if(fp==NULL){
         puts("Error in creating file");
         *logFile << "Error in creating file" << std::endl;
@@ -132,11 +132,16 @@ void Transfer::receive(){
         n = read(receivedSock, buffer, CHUNK_SIZE);
         if( n < 0){
             if(errno == EAGAIN || errno == EWOULDBLOCK){
-                remove(filename.c_str());
+                remove((filename + ".part").c_str());
                 *logFile << "Error reading packets: " << errno << std::endl;
+                std::cout << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+                *logFile << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+                free(buffer);
+                fclose(fp);
+                close(sock);
+                close(receivedSock);
+                return;
             }
-            std::cout << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
-            *logFile << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
             break;
         }
         receivedSize += n;
@@ -147,6 +152,7 @@ void Transfer::receive(){
     }
     free(buffer);
     fclose(fp);
+    rename((filename+".part").c_str(), filename.c_str());
 
     *logFile << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
     std::cout << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
