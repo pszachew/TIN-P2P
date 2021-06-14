@@ -102,7 +102,7 @@ void broadcastReceive(Broadcast *socket, CUI *console){
             if(std::find(local.begin(), local.end(), message.packet.name) != local.end()){ // sprawdzenie czy klient posiada dany zasob lokalnie
                 // sprawdzenie czy nie nawiazalismy juz polaczenia z tym klientem
                 if(std::find_if(sending.begin(), sending.end(), [&](const std::pair<std::string,int> &e)
-                                    {return e.first == message.packet.name && e.second == message.packet.port;}) == sending.end()){
+                                    {return e.first == message.packet.name && e.second == (int)message.packet.port;}) == sending.end()){
                     writeLog("bin/logs/sended_transfers.log", message);
                     std::ofstream *f = new std::ofstream("bin/logs/sended_transfers.log", std::ios::app);
                     sending.push_back(std::make_pair(message.packet.name, message.packet.port)); // dodanie pakietu do listy wysylanych pakietow
@@ -114,7 +114,8 @@ void broadcastReceive(Broadcast *socket, CUI *console){
         else if(message.packet.type == SELF_SEND){ // wlasne pakiety 
             console->updateLocal();
             continue;
-        }
+        }else if(message.packet.type == TIME_OUT)
+            return;
         else perror("Wrong msg type");
         console->updateList(); // aktualizacja list zasobow w interfejsie 
     }

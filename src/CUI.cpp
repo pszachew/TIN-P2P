@@ -119,9 +119,6 @@ void CUI::run(){
             for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i){
                 if(choose == n){
                     downloads.push_back(std::thread(&CUI::downloading, this, *i));
-                    std::cout << "press any key to continue" << std::endl;
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
-                    getchar();
                     option = 0;
                     break;
                 } else if(std::find_if(requests.begin(), requests.end(), [&](const std::pair<std::string,int> &e){return e.first == *i;}) == requests.end() || !requests.size()){
@@ -158,6 +155,7 @@ void CUI::updateList(){
 }
 
 void CUI::updateLocal(){
+    local_resources.clear();
     std::string path = std::filesystem::current_path();
     path = path + "/resources";
     for (const auto & entry : std::filesystem::directory_iterator(path)){

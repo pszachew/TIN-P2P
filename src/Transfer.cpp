@@ -71,7 +71,13 @@ void Transfer::sendFile(){
         int sent_size = write(sock, buffer, temp); // wyslanie danych
         if(sent_size == -1){ // sprawdzenie czy udalo sie wyslac
             puts("Error in sending data");
-            *logFile << "Error in sending data" << std::endl;
+            if(errno == EAGAIN || errno == EWOULDBLOCK){
+                *logFile << "Error sending packets: " << errno << std::endl;
+                std::cout << "Transfering: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+                *logFile << "Transfering: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+            }else{    
+                *logFile << "Error in sending data" << std::endl;
+            }
             break;
         }
         n += sent_size; // dodanie liczby wyslanych bajtow do licznika
@@ -79,7 +85,11 @@ void Transfer::sendFile(){
     }
     free(buffer);
     fclose(fp);
-    *logFile << "File transfered successfully" << std::endl;
+    if(n == fileSize)
+        *logFile << "File transfered successfully." << std::endl;
+    else
+        *logFile << "File transfer ended." << std::endl;
+    std::cout << "Transfer "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
     close(sock);
 }
 void Transfer::receive(){
@@ -125,6 +135,8 @@ void Transfer::receive(){
                 remove(filename.c_str());
                 *logFile << "Error reading packets: " << errno << std::endl;
             }
+            std::cout << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
+            *logFile << "Download: " << filename.substr(filename.find("/")+1) << " timed out." << std::endl;
             break;
         }
         receivedSize += n;
@@ -136,7 +148,8 @@ void Transfer::receive(){
     free(buffer);
     fclose(fp);
 
-    *logFile << "Transfer ended" << std::endl;
+    *logFile << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
+    std::cout << "Download "<< filename.substr(filename.find("/")+1) <<" ended." << std::endl;
     close(sock);
     close(receivedSock);
 }

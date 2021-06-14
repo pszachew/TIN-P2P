@@ -31,15 +31,24 @@ void Broadcast::broadcast(struct ResourceDetails message){
 	perror("sendto() sent a different number of bytes than expected");
 }
 
-ReceivedPacket Broadcast::receive(){
+ReceivedPacket Broadcast::receive(){    
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     int size;
     // char buffer[MAX_SIZE];
     struct sockaddr_in received;
     socklen_t len = sizeof(received);
     ResourceDetails packet;
     // odebranie pakietu z adresu rozgloszeniowego
-    if ((size = recvfrom(sock, (ResourceDetails*)&packet, sizeof(packet), 0, (struct sockaddr *) &received, &len)) < 0)
+    if ((size = recvfrom(sock, (ResourceDetails*)&packet, sizeof(packet), 0, (struct sockaddr *) &received, &len)) < 0){
+        if(errno == EAGAIN || errno == EWOULDBLOCK){
+            packet.type = TIME_OUT;
+            return ReceivedPacket(packet, "");
+        }
         perror("recvfrom() failed");
+    }
     std::string ipReceived = inet_ntoa(received.sin_addr); // ip klienta od ktorego otrzymalismy pakiet
     packet.type = ntohl(packet.type); // typ pakietu
     packet.port = ntohl(packet.port); // port != 0 jesli jest to zapytanie o pobranie zasobu

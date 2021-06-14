@@ -10,6 +10,7 @@
 #define DELETE_RESOURCE 1
 #define DOWNLOAD_REQUEST 2
 #define SELF_SEND 3
+#define TIME_OUT 4
 
 // TCP commands
 #define SEND_FILE 0
