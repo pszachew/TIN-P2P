@@ -20,19 +20,18 @@
 
 class Broadcast {
 private:
-    int sock;
-    unsigned short port;
-    struct sockaddr_in address;
-    std::string broadcastIp;
-    std::string ip;
+    int sock; // deskryptor gniazda rozgloszeniowego
+    unsigned short port; // port do rozglaszania
+    struct sockaddr_in address; // address gniazda rozgloszeniowego
+    std::string broadcastIp; // ip rozgloszeniowe
+    std::string ip; // ip lokalne
 public:
     Broadcast(const char *name, unsigned short port);
     ~Broadcast();
-    void broadcast(char const *message, int msgSize, int id);
-    void broadcast(struct ResourceDetails message);
-    ReceivedPacket receive();
-    void setIps(const char *name="eth0");
-    std::string getIp();
+    void broadcast(struct ResourceDetails message); // wysylanie pakietow 
+    ReceivedPacket receive(); // odbieranie pakietow
+    void setIps(const char *name="eth0"); // znalezienie adresow ip w zaleznosci od wybranego interfejsu 
+    std::string getIp(); // zwraca wartosc lokalnego ip
 };
 
 #endif

@@ -1,13 +1,13 @@
 #include "Transfer.h"
 
-int bytesToInt(char buffer[4]){
+int bytesToInt(char buffer[4]){ // zamiana czterech charow na int
     int number = int((unsigned char)(buffer[0]) << 24 |
             (unsigned char)(buffer[1]) << 16 |
             (unsigned char)(buffer[2]) << 8 |
             (unsigned char)(buffer[3]));
     return number;
 }
-char* intToBytes(int n, char* buffer){
+char* intToBytes(int n, char* buffer){ // zamiana int na tablice czterech char
     buffer[0] = n >> 24;
     buffer[1] = n >> 16;
     buffer[2] = n >> 8;
@@ -19,59 +19,62 @@ Transfer::Transfer(std::string filename, std::ofstream *logFile, std::string ip,
     this->filename = filename;
     this->port = port;
     this->logFile = logFile;
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) // otwarcie gniazda
         *logFile << "socket() failed" << std::endl;
     address.sin_family = AF_INET;
-    address.sin_port = htons(port); // choose first available port
+    address.sin_port = htons(port);
     address.sin_addr.s_addr = inet_addr(ip.c_str());
 
-    if(!sending){
+    if(!sending){ // jesli klient ma odebrac plik
+        // przypisujemy adres do gniazda
         if (bind(sock, (struct sockaddr *) &address, sizeof(address)) < 0){
             puts("bind() failed");
             *logFile << "bind() failed" << std::endl;
             return;
         }
         socklen_t len = sizeof(address);
+        // port byl rowny zero wiec zostal wybrany pierwszy otwarty port
         if (getsockname(sock, (struct sockaddr *)&address, &len) != -1)
             this->port = ntohs(address.sin_port);
     }
 }
 
 void Transfer::sendFile(){
-    if(connect(sock, (struct sockaddr*)&address, sizeof(address)) < 0){
+    if(connect(sock, (struct sockaddr*)&address, sizeof(address)) < 0){ // proba nawiazania polaczenia
         puts("Unable to connect");
         *logFile << "Unable to connect" << std::endl;
         return;
     }
     *logFile << "Connected with server successfully"<< std::endl;
     FILE *fp;
-    fp = fopen(filename.c_str(), "rb");
-    fseek(fp, 0L, SEEK_END);
-    int fileSize = ftell(fp);
-    rewind(fp);
+    fp = fopen(filename.c_str(), "rb"); // otwarcie zasobu
     if(fp == NULL){
         puts("Error in reading file.");
         *logFile << "Error in reading file." << std::endl;
         return;
     }
+    fseek(fp, 0L, SEEK_END); // przesuniecie wskaznika na koniec pliku
+    int fileSize = ftell(fp); // otrzymanie rozmiaru pliku
+    rewind(fp); // powrot na poczatek pliku
+
     // struct ResourcePacket packet;
-    char *firstPacket = (char*)malloc(8 * sizeof(char));
+    char *firstPacket = (char*)malloc(8 * sizeof(char)); // pierwszy pakiet z komenda oraz rozmiarem zasobu
     firstPacket = intToBytes(htonl(SEND_FILE), firstPacket);
     firstPacket = intToBytes(htonl(fileSize), firstPacket);
     firstPacket -= 8;
-    write(sock, firstPacket, 8);
-    free(firstPacket);
-    char *buffer = (char*)malloc((CHUNK_SIZE) * sizeof(char));
+    write(sock, firstPacket, 8); // wyslanie pierwszego pakietu
+    free(firstPacket); // wyczyszczenie bufora
+    char *buffer = (char*)malloc((CHUNK_SIZE) * sizeof(char)); // bufor na kawalki pliku
     int n = 0;
-    while(n != fileSize){
-        int temp = fread(buffer, 1, CHUNK_SIZE, fp);
-        int sent_size = write(sock, buffer, temp);
-        if(sent_size == -1){
+    while(n != fileSize){ // wysylaj dopoki nie dotarlismy do konca pliku
+        int temp = fread(buffer, 1, CHUNK_SIZE, fp); // wczytaj dane z pliku
+        int sent_size = write(sock, buffer, temp); // wyslanie danych
+        if(sent_size == -1){ // sprawdzenie czy udalo sie wyslac
             puts("Error in sending data");
             *logFile << "Error in sending data" << std::endl;
             break;
         }
-        n += sent_size;
+        n += sent_size; // dodanie liczby wyslanych bajtow do licznika
         *logFile << "Sent chunk size: " << sent_size << std::endl;
     }
     free(buffer);
@@ -80,7 +83,7 @@ void Transfer::sendFile(){
     close(sock);
 }
 void Transfer::receive(){
-    if(listen(sock, 1) < 0){
+    if(listen(sock, 1) < 0){ // nasluchuj polaczenia
         puts("Error while listening");
         *logFile << "Error while listening" << std::endl;
         return;
@@ -88,14 +91,17 @@ void Transfer::receive(){
     *logFile << "Listening..." << std::endl;
     struct sockaddr_in clientAddress;
     socklen_t len = sizeof(clientAddress);
-    int receivedSock = accept(sock, (struct sockaddr*) &clientAddress, &len);
+    int receivedSock = accept(sock, (struct sockaddr*) &clientAddress, &len); // deskryptor gniazda
     if (receivedSock < 0){
         puts("Can't accept connection");
         *logFile << "Can't accept connection" << std::endl;
         return;
     }
     *logFile << "Connected at IP: " << inet_ntoa(clientAddress.sin_addr) << " and port: " << ntohs(clientAddress.sin_port) << std::endl;
-
+    struct timeval tv;
+    tv.tv_sec = 20;
+    tv.tv_usec = 0;
+    setsockopt(receivedSock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     int n;
     FILE *fp;
     fp = fopen(filename.c_str(), "wb");
@@ -105,30 +111,32 @@ void Transfer::receive(){
         return;
     }
     // ResourcePacket packet;
-    char *firstPacket = (char*)malloc(8 * sizeof(char));
-    n = read(receivedSock, firstPacket, 8);
-    int command = ntohl(bytesToInt(firstPacket));
-    if(command != SEND_FILE){
-        int fileSize = ntohl(bytesToInt(firstPacket+4));
-        free(firstPacket);
-        char *buffer = (char*)malloc((CHUNK_SIZE+8) * sizeof(char));
-        int receivedSize = 0;
-        while(receivedSize != fileSize){
-            n = read(receivedSock, buffer, CHUNK_SIZE);
-            if(n<=0){
-                break;
+    char *firstPacket = (char*)malloc(8 * sizeof(char)); // pierwszy pakiet z komenda i rozmiarem pliku
+    n = read(receivedSock, firstPacket, 8); // odebranie pakietu
+    // int command = ntohl(bytesToInt(firstPacket));
+    int fileSize = ntohl(bytesToInt(firstPacket+4));
+    free(firstPacket);
+    char *buffer = (char*)malloc((CHUNK_SIZE+8) * sizeof(char));
+    int receivedSize = 0;
+    while(receivedSize != fileSize){ // odbieramy pakietu dopoki nie dotarlismy do konca pliku
+        n = read(receivedSock, buffer, CHUNK_SIZE);
+        if( n < 0){
+            if(errno == EAGAIN || errno == EWOULDBLOCK){
+                remove(filename.c_str());
+                *logFile << "Error reading packets: " << errno << std::endl;
             }
-            receivedSize += n;
-            *logFile << "Chunk size: " << n << std::endl;
-            if(fwrite(buffer, 1, n, fp) < 0){
-                *logFile << "Error while writing file" << std::endl;
-            }
+            break;
         }
-        free(buffer);
+        receivedSize += n;
+        *logFile << "Chunk size: " << n << std::endl;
+        if(fwrite(buffer, 1, n, fp) < 0){
+            *logFile << "Error while writing file" << std::endl;
+        }
     }
+    free(buffer);
     fclose(fp);
 
-    *logFile << "Transfer received" << std::endl;
+    *logFile << "Transfer ended" << std::endl;
     close(sock);
     close(receivedSock);
 }

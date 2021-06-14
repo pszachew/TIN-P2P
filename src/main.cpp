@@ -12,23 +12,23 @@
 
 using namespace std::chrono_literals;
 
-std::set<std::string> createList();
-void broadcastList(Broadcast *socket, CUI *console);
-void broadcastReceive(Broadcast *socket, CUI *console);
-void transferFile(std::string ip, std::string name, std::ofstream *logFile, int port);
-void writeLog(std::string filename, ResourceDetails packet);
-void writeLog(std::string filename, ReceivedPacket packet);
+std::set<std::string> createList(); // tworzenie listy lokalnych zasobow
+void broadcastList(Broadcast *socket, CUI *console); // rozglaszanie pakietow
+void broadcastReceive(Broadcast *socket, CUI *console); // odbieranie rozglaszanych pakietow
+void transferFile(std::string ip, std::string name, std::ofstream *logFile, int port, std::vector<std::pair<std::string,int>> *sending); // przesylanie pliku do oczekujacego klienta
+void writeLog(std::string filename, ResourceDetails packet); // obsluga plikow z logami
+void writeLog(std::string filename, ReceivedPacket packet); // obsluga plikow  z logami
 
 int main(int argc, char *argv[]){
     if (argc < 3){
         fprintf(stderr,"Usage: %s <interface> <port>\n", argv[0]);
         exit(1);
     }
-    Broadcast socket(argv[1], atol(argv[2]));
+    Broadcast socket(argv[1], atol(argv[2])); // stworzenie gniazda do rozglaszania
 
-    CUI console(socket.getIp());
-    std::thread broadcasting(broadcastList, &socket, &console);
-    std::thread broadcastReceiving(broadcastReceive, &socket, &console);
+    CUI console(socket.getIp()); // stworzenie watku obslugujacego interfejs oraz listy zasobow
+    std::thread broadcasting(broadcastList, &socket, &console); // watek odpowiedzialny za rozglaszanie pakietow
+    std::thread broadcastReceiving(broadcastReceive, &socket, &console); // watek odpowiedzialny za odbieranie rozglaszanych pakietow
 
     console.joinThread();
     broadcasting.join();
@@ -36,31 +36,31 @@ int main(int argc, char *argv[]){
 }
 
 std::set<std::string> createList(){
-    std::string path = std::filesystem::current_path();
-    path = path + "/resources";
+    std::string path = std::filesystem::current_path(); // obecna sciezka
+    path = path + "/resources"; // folder z zasobami
     std::set<std::string> list;
     for (const auto & entry : std::filesystem::directory_iterator(path)){
-        list.insert(entry.path().filename());
+        list.insert(entry.path().filename()); // wszystkie pliki w folderze
     }
     return list;
 }
 
 void broadcastList(Broadcast *socket, CUI *console){
-    while(console->isRunning()){
-        std::set<std::string> resourcesList = createList();
-        std::set<std::string> deletedList = console->getDeleted();
-        std::set<std::pair<std::string, int>> requestedList = console->getRequests();
-        std::string logFile = "bin/logs/broadcasting.log";
+    while(console->isRunning()){ // sprawdz czy interfejs caly czas dziala
+        std::set<std::string> resourcesList = createList(); // lista lokalnych zasobow
+        std::set<std::string> deletedList = console->getDeleted(); // zasoby usuniete
+        std::set<std::pair<std::string, int>> requestedList = console->getRequests(); // lista zasobow wraz z portem potrzebnym do polaczenia TCP
+        std::string logFile = "bin/logs/broadcasting.log"; // plik z zapisem wysylanych pakietow na adres rozgloszeniowym
 
-        for(auto const& value: resourcesList) {
+        for(auto const& value: resourcesList) { // rozglaszanie pakietow z nazwami lokalnych zasobow
             ResourceDetails resourcePacket;
-            resourcePacket.type = htonl(RESOURCE_LIST);
-            resourcePacket.port = 0;
+            resourcePacket.type = htonl(RESOURCE_LIST); 
+            resourcePacket.port = 0; // wartosc niepotrzebna w tym pakiecie
             strcpy(resourcePacket.name, value.c_str());
             socket->broadcast(resourcePacket);
             writeLog(logFile, resourcePacket);
         }
-        for(auto const& value: deletedList) {
+        for(auto const& value: deletedList) { // rozglaszanie pakietow z nazwami usunietych zasobow
             ResourceDetails resourcePacket;
             resourcePacket.type = htonl(DELETE_RESOURCE);
             resourcePacket.port = 0;
@@ -68,7 +68,7 @@ void broadcastList(Broadcast *socket, CUI *console){
             socket->broadcast(resourcePacket);
             writeLog(logFile, resourcePacket);
         }
-        for(auto const& value: requestedList) {
+        for(auto const& value: requestedList) { // rozglaszanie prosb o pobranie zasobow
             ResourceDetails resourcePacket;
             resourcePacket.type = htonl(DOWNLOAD_REQUEST);
             resourcePacket.port = htonl(value.second);
@@ -81,47 +81,50 @@ void broadcastList(Broadcast *socket, CUI *console){
 }
 
 void broadcastReceive(Broadcast *socket, CUI *console){
-    ReceivedPacket message;
+    ReceivedPacket message; // odebrana wiadomosc
     std::vector<std::thread> transfers;
-    std::vector<std::string> sending;
+    std::vector<std::pair<std::string,int>> sending;
     std::string logFile = "bin/logs/received_broadcast.log";
     while(console->isRunning()){
         message = socket->receive();
         writeLog(logFile, message);
-        if(message.packet.type == RESOURCE_LIST )
+        if(message.packet.type == RESOURCE_LIST ) // pakiet z nazwa zdalnego zasobu
         {
             console->addRemoteResource(message.packet.name);
         }
-        else if (message.packet.type == DELETE_RESOURCE)
+        else if (message.packet.type == DELETE_RESOURCE) // pakiet z nazwa usunietego zasobu
         {
             console->addDeletedResource(message.packet.name);
         }
-        else if (message.packet.type == DOWNLOAD_REQUEST)
+        else if (message.packet.type == DOWNLOAD_REQUEST) // prosba o pobranie zasobu
         {
             std::set<std::string> local = createList();
-            if(std::find(local.begin(), local.end(), message.packet.name) != local.end()){
-                if(std::find(sending.begin(), sending.end(), message.packet.name) == sending.end()){
+            if(std::find(local.begin(), local.end(), message.packet.name) != local.end()){ // sprawdzenie czy klient posiada dany zasob lokalnie
+                // sprawdzenie czy nie nawiazalismy juz polaczenia z tym klientem
+                if(std::find_if(sending.begin(), sending.end(), [&](const std::pair<std::string,int> &e)
+                                    {return e.first == message.packet.name && e.second == message.packet.port;}) == sending.end()){
                     writeLog("bin/logs/sended_transfers.log", message);
                     std::ofstream *f = new std::ofstream("bin/logs/sended_transfers.log", std::ios::app);
-                    sending.push_back(message.packet.name);
-                    std::cout << message.packet.name << std::endl;
-                    transfers.push_back(std::thread(transferFile, message.ip, message.packet.name, f, message.packet.port));
+                    sending.push_back(std::make_pair(message.packet.name, message.packet.port)); // dodanie pakietu do listy wysylanych pakietow
+                    // watek odpowiedzialny za przeslanie danych do proszacego klienta
+                    transfers.push_back(std::thread(transferFile, message.ip, message.packet.name, f, message.packet.port, &sending));
                 }
             }
         }
-        else if(message.packet.type == SELF_SEND){
+        else if(message.packet.type == SELF_SEND){ // wlasne pakiety 
             console->updateLocal();
             continue;
         }
         else perror("Wrong msg type");
-        console->updateList();
+        console->updateList(); // aktualizacja list zasobow w interfejsie 
     }
 }
 
-void transferFile(std::string ip, std::string name, std::ofstream *logFile, int port){
-    Transfer transfer(("resources/" + name), logFile, ip, true, port);
-    std::cout<<"TRANSFERING.." <<std::endl;
-    transfer.sendFile();
+void transferFile(std::string ip, std::string name, std::ofstream *logFile, int port, std::vector<std::pair<std::string,int>> *sending){
+    Transfer transfer(("resources/" + name), logFile, ip, true, port); // transfer pliku jako wysylajacy
+    std::cout<<"Transfering: " << name << std::endl;
+    transfer.sendFile(); // nawiazanie polaczenia i wyslanie pliku
+    sending->erase(std::remove(sending->begin(), sending->end(), std::make_pair(name, port)), sending->end());
 }
 
 void writeLog(std::string filename, ResourceDetails packet){

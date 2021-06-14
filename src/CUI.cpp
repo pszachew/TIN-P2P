@@ -1,6 +1,6 @@
 #include "CUI.h"
 
-bool isNumber(const std::string& s) {
+bool isNumber(const std::string& s) { // sprawdzenie czy bufor to liczba
     return !s.empty() && std::find_if(s.begin(), s.end(), [](unsigned char c) { return !std::isdigit(c); }) == s.end();
 }
 
@@ -12,7 +12,7 @@ CUI::CUI(std::string ip){
 void CUI::run(){
     int option = 0;
     running = true;
-    while(option != 6){
+    while(option != 6){ // glowne menu
         std::cout << "\x1B[2J\x1B[H";
         std::cout << "Choose:" << std::endl;
         std::cout << "1. Show available resources list" << std::endl;
@@ -33,15 +33,16 @@ void CUI::run(){
         }
         option = atoi(buffer.c_str());
         buffer.clear();
-        if(option == 1){ //list
+        if(option == 1){ // lista wszystkich zasobow
             std::cout << "\x1B[2J\x1B[H";
             for(std::set<std::string>::iterator iter = resources.begin(); iter != resources.end(); ++iter)
                 std::cout << * iter << ' '<<std::endl;
             std::cout << "press any key to continue" << std::endl;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
             getchar();
+            option = 0;
         }
-        else if(option == 2)
+        else if(option == 2) // lista zasobow lokalnych
         {
             std::cout << "\x1B[2J\x1B[H";
             for (auto i = local_resources.begin(); i != local_resources.end(); ++i)
@@ -49,8 +50,9 @@ void CUI::run(){
             std::cout << "press any key to continue" << std::endl;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
             getchar();
+            option = 0;
         }
-        else if(option == 3)
+        else if(option == 3) // lista zasobow przechowywanych zdalnie
         {
             std::cout << "\x1B[2J\x1B[H";
             for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i)
@@ -58,13 +60,14 @@ void CUI::run(){
             std::cout << "press any key to continue" << std::endl;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
             getchar();
+            option = 0;
         }
-        else if(option == 4){
+        else if(option == 4){ // wybieranie zasobu ktory chcemy usunac
             int n = 1;
             int choose = 0;
             std::cout << "\x1B[2J\x1B[H";
             std::cout << "Choose number to delete resource:" << std::endl;   
-            for (auto i = local_resources.begin(); i != local_resources.end(); ++i){
+            for (auto i = local_resources.begin(); i != local_resources.end(); ++i){ // lista zasobow lokalnych
                 std::cout << n <<". "<< *i << std::endl;   
                 ++n;
             }
@@ -76,13 +79,13 @@ void CUI::run(){
             }
             n = 1;
             for (auto i = local_resources.begin(); i != local_resources.end(); ++i){
-                if(choose == n){
-                    deleted_resources.insert(*i);
-                    local_resources.erase(*i);
-                    resources.erase(*i);
+                if(choose == n){ // wybrany zasobu
+                    deleted_resources.insert(*i); // dodajemy do listy usunietych
+                    local_resources.erase(*i); // usuniecie pliku z lokalnej listy
+                    resources.erase(*i); // usuniecie z listy
                     std::string temp = "resources/";
                     temp = temp + *i;
-                    if( remove(temp.c_str()) != 0 )
+                    if( remove(temp.c_str()) != 0 ) // usuniecie pliku
                         perror( "Error deleting file" );
                     else
                         puts( "File successfully deleted" );
@@ -95,12 +98,12 @@ void CUI::run(){
                 ++n;
             }
         }
-        else if(option == 5){
+        else if(option == 5){ // wybranie zasobu do pobrania
             int n = 1;
             int choose = 0;
             std::cout << "\x1B[2J\x1B[H";
             std::cout << "Choose number to download resource:" << std::endl;   
-            for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i){
+            for (auto i = remote_resources.begin(); i != remote_resources.end(); ++i){ // lista zdalnych zasobow
                 if(std::find_if(requests.begin(), requests.end(), [&](const std::pair<std::string,int> &e){return e.first == *i;}) == requests.end() || !requests.size()){
                     std::cout << n <<". "<< *i << std::endl;
                     ++n;
@@ -148,7 +151,10 @@ void CUI::updateList(){
     }
     for(auto const& value: deleted_resources) {
         resources.erase(value);
-    }
+    }    
+    for(auto const& value: local_resources) {
+        remote_resources.erase(value);
+    }    
 }
 
 void CUI::updateLocal(){
@@ -205,6 +211,9 @@ void CUI::addDeletedResource(std::string name){
 }
 void CUI::addRemoteResource(std::string name){
     if(deleted_resources.find(name) == deleted_resources.end() || !deleted_resources.size()){
+        remote_resources.insert(name);
+    }    
+    if(local_resources.find(name) == local_resources.end() || !local_resources.size()){
         remote_resources.insert(name);
     }
 }
