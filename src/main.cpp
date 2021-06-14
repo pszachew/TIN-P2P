@@ -39,7 +39,9 @@ std::set<std::string> createList(){
     path = path + "/resources"; // folder z zasobami
     std::set<std::string> list;
     for (const auto & entry : std::filesystem::directory_iterator(path)){
-        list.insert(entry.path().filename()); // wszystkie pliki w folderze
+        std::string tempName = entry.path().filename();
+        if(tempName.substr(tempName.size()-5, 5) != ".part")
+            list.insert(tempName);
     }
     return list;
 }
